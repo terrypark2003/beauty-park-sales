@@ -1,3 +1,4 @@
+// 작성자 이름을 받아 KV에서 해당 작성자의 보고서 목록을 반환하는 API 라우트
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { SalesReport } from "@/lib/types";

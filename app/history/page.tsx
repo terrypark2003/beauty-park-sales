@@ -1,5 +1,7 @@
 "use client";
 
+// 로그인한 작성자 이름으로 본인이 제출한 매출 보고서 목록을 조회하는 페이지
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

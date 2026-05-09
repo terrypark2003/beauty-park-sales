@@ -1,3 +1,4 @@
+// 관리자 비밀번호로 보호되는 보고서 편집(PATCH) · 소프트 삭제(DELETE) API 라우트
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
 import { computeTotals, isFullyConfirmed, SalesReport } from "@/lib/types";
