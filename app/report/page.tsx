@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { computeTotals, formatKRW } from "@/lib/types";
 
 const TERMINAL_NAMES = [
@@ -38,6 +39,7 @@ export default function ReportPage() {
   );
 
   const [cashOnHand, setCashOnHand] = useState(0);
+  const [transferDetails, setTransferDetails] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -98,6 +100,7 @@ export default function ReportPage() {
           crmTaxFreeCard,
           terminals,
           cashOnHand,
+          transferDetails,
           notes,
         }),
       });
@@ -116,6 +119,7 @@ export default function ReportPage() {
         }))
       );
       setCashOnHand(0);
+      setTransferDetails("");
       setNotes("");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "제출 실패";
@@ -132,16 +136,21 @@ export default function ReportPage() {
 
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">뷰티파크의원 일일 매출 보고서</h1>
           <p className="text-sm text-neutral-500 mt-1">
             작성자: <span className="font-semibold text-neutral-700">{author}</span>
           </p>
         </div>
-        <button onClick={handleLogout} className="text-sm text-neutral-600 hover:text-neutral-900">
-          로그아웃
-        </button>
+        <div className="flex gap-3 items-center">
+          <Link href="/history" className="text-sm text-brand-600 hover:underline font-medium">
+            내 제출 기록 →
+          </Link>
+          <button onClick={handleLogout} className="text-sm text-neutral-600 hover:text-neutral-900">
+            로그아웃
+          </button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -274,11 +283,22 @@ export default function ReportPage() {
         </section>
 
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
-          <h2 className="text-lg font-semibold text-neutral-900 mb-4">4. 시재 확인 및 비고</h2>
+          <h2 className="text-lg font-semibold text-neutral-900 mb-4">4. 시재 · 이체 내역 · 비고</h2>
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">현금 시재</label>
               <MoneyInput value={cashOnHand} onChange={setCashOnHand} alignRight={false} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">이체 내역</label>
+              <textarea
+                value={transferDetails}
+                onChange={(e) => setTransferDetails(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"
+                placeholder="예) 홍길동 / 100,000원 / 14:30 / 신한 1234"
+              />
+              <p className="text-xs text-neutral-500 mt-1">이체로 받은 내역을 자유롭게 입력하세요 (이름·금액·시간·은행 등)</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">비고</label>

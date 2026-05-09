@@ -5,6 +5,9 @@ export function buildEmailHTML(r: SalesReport): string {
   const row = (label: string, val: string, bold = false) =>
     `<tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;${bold ? "font-weight:700;" : ""}">${label}</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;${bold ? "font-weight:700;" : ""}">${val}</td></tr>`;
 
+  const escapeHtml = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   const terminalRows = r.terminals
     .map(
       (term) => `
@@ -77,10 +80,11 @@ export function buildEmailHTML(r: SalesReport): string {
         </tbody>
       </table>
 
-      <h3 style="margin:24px 0 8px;font-size:15px;">4. 시재 및 비고</h3>
+      <h3 style="margin:24px 0 8px;font-size:15px;">4. 시재 · 이체 내역 · 비고</h3>
       <table style="width:100%;border-collapse:collapse;font-size:14px;">
         ${row("현금 시재", formatKRW(r.cashOnHand))}
-        <tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;vertical-align:top;">비고</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;white-space:pre-wrap;">${(r.notes || "-").replace(/</g, "&lt;")}</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;vertical-align:top;width:120px;">이체 내역</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;white-space:pre-wrap;">${escapeHtml(r.transferDetails || "-")}</td></tr>
+        <tr><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;vertical-align:top;">비고</td><td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;white-space:pre-wrap;">${escapeHtml(r.notes || "-")}</td></tr>
       </table>
 
       <div style="margin-top:24px;font-size:12px;color:#6b7280;">제출 시각: ${new Date(r.submittedAt).toLocaleString("ko-KR")}</div>

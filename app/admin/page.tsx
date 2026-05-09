@@ -77,6 +77,7 @@ export default function AdminPage() {
       "CRM총매출",
       "단말기총매출",
       "현금시재",
+      "이체내역",
       "비고",
       "제출시각",
     ];
@@ -96,6 +97,7 @@ export default function AdminPage() {
         t.crmGrandTotal,
         t.terminalGrandTotal,
         r.cashOnHand,
+        (r.transferDetails || "").replace(/[\n\r,"]/g, " "),
         (r.notes || "").replace(/[\n\r,"]/g, " "),
         r.submittedAt,
       ].join(",");
@@ -330,6 +332,12 @@ function Detail({ r }: { r: SalesReport }) {
           <span><span className="text-neutral-500">검토자:</span> {r.reviewer || "-"}</span>
           <span><span className="text-neutral-500">현금 시재:</span> {formatKRW(r.cashOnHand)}원</span>
         </div>
+        {r.transferDetails && (
+          <div className="mt-2">
+            <div className="text-neutral-500 text-xs">이체 내역</div>
+            <div className="whitespace-pre-wrap">{r.transferDetails}</div>
+          </div>
+        )}
         {r.notes && (
           <div className="mt-2">
             <div className="text-neutral-500 text-xs">비고</div>

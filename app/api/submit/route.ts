@@ -16,6 +16,7 @@ interface SubmitBody {
   crmTaxFreeCard: number;
   terminals: Array<{ name: string; card: number; cash: number }>;
   cashOnHand: number;
+  transferDetails?: string;
   notes?: string;
 }
 
@@ -45,10 +46,11 @@ export async function POST(req: Request) {
     }
 
     const id = `${body.reportDate}_${Date.now()}`;
+    const author = body.author.trim();
     const report: SalesReport = {
       id,
       reportDate: body.reportDate,
-      author: body.author.trim(),
+      author,
       reviewer: body.reviewer?.trim() || undefined,
       crmTaxableCard: Number(body.crmTaxableCard) || 0,
       crmTaxableCashReceipt: Number(body.crmTaxableCashReceipt) || 0,
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
         cash: Number(t.cash) || 0,
       })),
       cashOnHand: Number(body.cashOnHand) || 0,
+      transferDetails: body.transferDetails?.toString(),
       notes: body.notes?.toString(),
       submittedAt: new Date().toISOString(),
     };
@@ -68,6 +71,11 @@ export async function POST(req: Request) {
       if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
         await kv.set(`report:${id}`, report);
         await kv.zadd("reports:index", {
+          score: Date.parse(report.submittedAt),
+          member: id,
+        });
+        // Per-author index (lowercased) so each user can list their own reports
+        await kv.zadd(`reports:author:${author.toLowerCase()}`, {
           score: Date.parse(report.submittedAt),
           member: id,
         });

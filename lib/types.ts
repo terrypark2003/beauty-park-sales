@@ -16,6 +16,7 @@ export interface SalesReport {
   }>;
   // Etc
   cashOnHand: number;
+  transferDetails?: string;  // 이체 내역
   notes?: string;
   // Meta
   submittedAt: string; // ISO
