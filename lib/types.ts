@@ -1,13 +1,13 @@
 export interface SalesReport {
   id: string;
-  reportDate: string;        // YYYY-MM-DD
+  reportDate: string;
   author: string;
   reviewer?: string;
   // CRM
-  crmTaxableCard: number;        // 비보험(과세) 카드
-  crmTaxableCashReceipt: number; // 비보험(과세) 현금영수증
-  crmTaxableTransfer: number;    // 비보험(과세) 통장입금
-  crmTaxFreeCard: number;        // 비보험(면세) 카드
+  crmTaxableCard: number;
+  crmTaxableCashReceipt: number;
+  crmTaxableTransfer: number;
+  crmTaxFreeCard: number;
   // Terminals
   terminals: Array<{
     name: string;
@@ -16,10 +16,16 @@ export interface SalesReport {
   }>;
   // Etc
   cashOnHand: number;
-  transferDetails?: string;  // 이체 내역
+  transferDetails?: string;
   notes?: string;
   // Meta
-  submittedAt: string; // ISO
+  submittedAt: string;
+  // Admin confirmation tracking
+  crmConfirmed?: boolean;
+  terminalConfirmed?: boolean;
+  salesConfirmed?: boolean;
+  confirmedAt?: string;
+  lastEditedAt?: string;
 }
 
 export interface ReportTotals {
@@ -77,4 +83,8 @@ export function computeTotals(r: {
 
 export function formatKRW(n: number): string {
   return new Intl.NumberFormat("ko-KR").format(Math.round(n || 0));
+}
+
+export function isFullyConfirmed(r: Pick<SalesReport, "crmConfirmed" | "terminalConfirmed" | "salesConfirmed">): boolean {
+  return Boolean(r.crmConfirmed && r.terminalConfirmed && r.salesConfirmed);
 }
