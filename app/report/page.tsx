@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { computeTotals, formatKRW } from "@/lib/types";
 
-const TERMINAL_COUNT = 5;
+const TERMINAL_NAMES = [
+  "데스크 왼쪽",
+  "데스크 오른쪽",
+  "상담실 1",
+  "상담실 2",
+  "상담실 3",
+] as const;
 
 const todayISO = () => {
   const d = new Date();
@@ -24,8 +30,8 @@ export default function ReportPage() {
   const [crmTaxFreeCard, setCrmTaxFreeCard] = useState(0);
 
   const [terminals, setTerminals] = useState(
-    Array.from({ length: TERMINAL_COUNT }, (_, i) => ({
-      name: `단말기 ${i + 1}`,
+    TERMINAL_NAMES.map((name) => ({
+      name,
       card: 0,
       cash: 0,
     }))
@@ -98,14 +104,13 @@ export default function ReportPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "제출 실패");
       setMessage({ type: "ok", text: "제출이 완료되었습니다. 이메일이 발송되었습니다." });
-      // Reset numeric fields but keep author
       setCrmTaxableCard(0);
       setCrmTaxableCashReceipt(0);
       setCrmTaxableTransfer(0);
       setCrmTaxFreeCard(0);
       setTerminals(
-        Array.from({ length: TERMINAL_COUNT }, (_, i) => ({
-          name: `단말기 ${i + 1}`,
+        TERMINAL_NAMES.map((name) => ({
+          name,
           card: 0,
           cash: 0,
         }))
@@ -129,23 +134,17 @@ export default function ReportPage() {
     <main className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">
-            뷰티파크의원 일일 매출 보고서
-          </h1>
+          <h1 className="text-2xl font-bold text-neutral-900">뷰티파크의원 일일 매출 보고서</h1>
           <p className="text-sm text-neutral-500 mt-1">
             작성자: <span className="font-semibold text-neutral-700">{author}</span>
           </p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="text-sm text-neutral-600 hover:text-neutral-900"
-        >
+        <button onClick={handleLogout} className="text-sm text-neutral-600 hover:text-neutral-900">
           로그아웃
         </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Date / Reviewer */}
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -171,11 +170,9 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {/* 1. CRM 매출 */}
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
           <h2 className="text-lg font-semibold text-neutral-900 mb-1">1. CRM 매출 입력</h2>
           <p className="text-sm text-neutral-500 mb-4">CRM 항목별 수납내역 4개 항목을 입력하세요</p>
-
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -213,11 +210,9 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {/* 2. 단말기 매출 */}
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
           <h2 className="text-lg font-semibold text-neutral-900 mb-1">2. 단말기 매출 입력</h2>
           <p className="text-sm text-neutral-500 mb-4">사용하는 단말기에만 입력하세요</p>
-
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -248,17 +243,13 @@ export default function ReportPage() {
           </div>
         </section>
 
-        {/* 3. 일치 여부 */}
         <section
           className={`rounded-xl border p-5 ${
-            totals.isMatched
-              ? "bg-emerald-50 border-emerald-200"
-              : "bg-rose-50 border-rose-200"
+            totals.isMatched ? "bg-emerald-50 border-emerald-200" : "bg-rose-50 border-rose-200"
           }`}
         >
           <h2 className="text-lg font-semibold text-neutral-900 mb-1">3. CRM ↔ 단말기 일치 여부</h2>
           <p className="text-sm text-neutral-600 mb-4">차액이 모두 0원이어야 제출 가능합니다</p>
-
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -277,13 +268,11 @@ export default function ReportPage() {
               </tbody>
             </table>
           </div>
-
           <div className={`mt-4 text-sm font-semibold ${totals.isMatched ? "text-emerald-700" : "text-rose-700"}`}>
             {totals.isMatched ? "✓ 모든 항목이 일치합니다. 제출 가능합니다." : "✗ 차액이 있습니다. 제출할 수 없습니다."}
           </div>
         </section>
 
-        {/* 4. 시재 / 비고 */}
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
           <h2 className="text-lg font-semibold text-neutral-900 mb-4">4. 시재 확인 및 비고</h2>
           <div className="grid grid-cols-1 gap-4">

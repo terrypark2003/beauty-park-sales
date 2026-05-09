@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const ENTRY_PASSWORD = "bpdeskteam";
+
 export default function HomePage() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("bp_user_name");
@@ -16,6 +20,11 @@ export default function HomePage() {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
+    if (password !== ENTRY_PASSWORD) {
+      setError("비밀번호가 올바르지 않습니다.");
+      return;
+    }
+    setError(null);
     localStorage.setItem("bp_user_name", trimmed);
     router.push("/report");
   };
@@ -27,19 +36,13 @@ export default function HomePage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand-100 text-brand-600 text-2xl font-bold mb-3">
             B
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900">
-            뷰티파크의원
-          </h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            일일 매출 보고 시스템
-          </p>
+          <h1 className="text-2xl font-bold text-neutral-900">뷰티파크의원</h1>
+          <p className="text-sm text-neutral-500 mt-1">일일 매출 보고 시스템</p>
         </div>
 
         <form onSubmit={handleEnter} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
-              작성자 이름
-            </label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">작성자 이름</label>
             <input
               type="text"
               value={name}
@@ -51,9 +54,30 @@ export default function HomePage() {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">비밀번호</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="비밀번호를 입력하세요"
+              className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+              {error}
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={!name.trim()}
+            disabled={!name.trim() || !password}
             className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
           >
             입장하기
@@ -61,10 +85,7 @@ export default function HomePage() {
         </form>
 
         <div className="mt-6 pt-6 border-t border-neutral-200 text-center">
-          <a
-            href="/admin"
-            className="text-sm text-neutral-500 hover:text-brand-600"
-          >
+          <a href="/admin" className="text-sm text-neutral-500 hover:text-brand-600">
             관리자 페이지 →
           </a>
         </div>

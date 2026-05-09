@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { kv } from "@vercel/kv";
 import { computeTotals, SalesReport } from "@/lib/types";
 import { buildEmailHTML } from "@/lib/email-template";
@@ -33,7 +33,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "단말기 데이터가 잘못되었습니다." }, { status: 400 });
     }
 
-    // SERVER-SIDE matching validation - block if not matched
     const totals = computeTotals(body);
     if (!totals.isMatched) {
       return NextResponse.json(
@@ -65,7 +64,6 @@ export async function POST(req: Request) {
       submittedAt: new Date().toISOString(),
     };
 
-    // 1) Save to Vercel KV (best-effort - don't block submission if KV not configured)
     try {
       if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
         await kv.set(`report:${id}`, report);
@@ -78,30 +76,39 @@ export async function POST(req: Request) {
       console.error("KV save failed:", kvErr);
     }
 
-    // 2) Send email via Resend
-    const apiKey = process.env.RESEND_API_KEY;
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_APP_PASSWORD;
     const to = process.env.EMAIL_TO || "jiscompanylimited@gmail.com";
-    const from = process.env.EMAIL_FROM || "onboarding@resend.dev";
+    const fromName = process.env.EMAIL_FROM_NAME || "뷰티파크의원 매출 보고";
 
-    if (!apiKey) {
+    if (!gmailUser || !gmailPass) {
       return NextResponse.json(
-        { error: "RESEND_API_KEY 환경 변수가 설정되어 있지 않습니다.", saved: true, id },
+        {
+          error: "GMAIL_USER 또는 GMAIL_APP_PASSWORD 환경 변수가 설정되어 있지 않습니다.",
+          saved: true,
+          id,
+        },
         { status: 500 }
       );
     }
 
-    const resend = new Resend(apiKey);
-    const subject = `[뷰티파크의원 매출] ${report.reportDate} - ${report.author}`;
-    const { error } = await resend.emails.send({
-      from,
-      to,
-      subject,
-      html: buildEmailHTML(report),
-    });
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: gmailUser, pass: gmailPass },
+      });
 
-    if (error) {
+      const subject = `[뷰티파크의원 매출] ${report.reportDate} - ${report.author}`;
+      await transporter.sendMail({
+        from: `"${fromName}" <${gmailUser}>`,
+        to,
+        subject,
+        html: buildEmailHTML(report),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "이메일 발송 실패";
       return NextResponse.json(
-        { error: `이메일 발송 실패: ${error.message}`, saved: true, id },
+        { error: `이메일 발송 실패: ${msg}`, saved: true, id },
         { status: 500 }
       );
     }
