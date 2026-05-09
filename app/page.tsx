@@ -1,0 +1,74 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function HomePage() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("bp_user_name");
+    if (saved) setName(saved);
+  }, []);
+
+  const handleEnter = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    localStorage.setItem("bp_user_name", trimmed);
+    router.push("/report");
+  };
+
+  return (
+    <main className="min-h-screen flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border border-neutral-200 p-8">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-brand-100 text-brand-600 text-2xl font-bold mb-3">
+            B
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">
+            뷰티파크의원
+          </h1>
+          <p className="text-sm text-neutral-500 mt-1">
+            일일 매출 보고 시스템
+          </p>
+        </div>
+
+        <form onSubmit={handleEnter} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              작성자 이름
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="이름을 입력하세요"
+              className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+              autoFocus
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!name.trim()}
+            className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
+          >
+            입장하기
+          </button>
+        </form>
+
+        <div className="mt-6 pt-6 border-t border-neutral-200 text-center">
+          <a
+            href="/admin"
+            className="text-sm text-neutral-500 hover:text-brand-600"
+          >
+            관리자 페이지 →
+          </a>
+        </div>
+      </div>
+    </main>
+  );
+}
