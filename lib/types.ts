@@ -8,6 +8,8 @@ export interface SalesReport {
   crmTaxableCashReceipt: number;
   crmTaxableTransfer: number;
   crmTaxFreeCard: number;
+  crmTaxFreeCashReceipt?: number; // 비보험(면세) 현금영수증
+  crmTaxFreeTransfer?: number;    // 비보험(면세) 통장입금
   // Terminals
   terminals: Array<{
     name: string;
@@ -46,11 +48,14 @@ export function computeTotals(r: {
   crmTaxableCashReceipt: number;
   crmTaxableTransfer: number;
   crmTaxFreeCard: number;
+  crmTaxFreeCashReceipt?: number;
+  crmTaxFreeTransfer?: number;
   terminals: Array<{ card: number; cash: number }>;
 }): ReportTotals {
   const crmCardTotal = (r.crmTaxableCard || 0) + (r.crmTaxFreeCard || 0);
   const crmCashTotal =
-    (r.crmTaxableCashReceipt || 0) + (r.crmTaxableTransfer || 0);
+    (r.crmTaxableCashReceipt || 0) + (r.crmTaxableTransfer || 0) +
+    (r.crmTaxFreeCashReceipt || 0) + (r.crmTaxFreeTransfer || 0);
   const crmGrandTotal = crmCardTotal + crmCashTotal;
 
   const terminalCardTotal = r.terminals.reduce(

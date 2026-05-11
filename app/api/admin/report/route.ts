@@ -42,6 +42,8 @@ interface MutationBody {
     | "crmTaxableCashReceipt"
     | "crmTaxableTransfer"
     | "crmTaxFreeCard"
+    | "crmTaxFreeCashReceipt"
+    | "crmTaxFreeTransfer"
     | "terminals"
     | "cashOnHand"
     | "transferDetails"
@@ -91,6 +93,8 @@ export async function PATCH(req: Request) {
       "crmTaxableCashReceipt",
       "crmTaxableTransfer",
       "crmTaxFreeCard",
+      "crmTaxFreeCashReceipt",
+      "crmTaxFreeTransfer",
       "terminals",
       "cashOnHand",
       "transferDetails",

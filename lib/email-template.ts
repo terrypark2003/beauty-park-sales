@@ -40,6 +40,8 @@ export function buildEmailHTML(r: SalesReport): string {
         ${row("비보험(과세) 현금영수증", formatKRW(r.crmTaxableCashReceipt))}
         ${row("비보험(과세) 통장입금", formatKRW(r.crmTaxableTransfer))}
         ${row("비보험(면세) 카드", formatKRW(r.crmTaxFreeCard))}
+        ${row("비보험(면세) 현금영수증", formatKRW(r.crmTaxFreeCashReceipt || 0))}
+        ${row("비보험(면세) 통장입금", formatKRW(r.crmTaxFreeTransfer || 0))}
         ${row("CRM 총 매출", formatKRW(t.crmGrandTotal), true)}
       </table>
 

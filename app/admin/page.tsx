@@ -83,6 +83,8 @@ export default function AdminPage() {
       "비보험과세_현금영수증",
       "비보험과세_통장입금",
       "비보험면세_카드",
+      "비보험면세_현금영수증",
+      "비보험면세_통장입금",
       "단말기_카드합계",
       "단말기_현금합계",
       "CRM총매출",
@@ -108,6 +110,8 @@ export default function AdminPage() {
         r.crmTaxableCashReceipt,
         r.crmTaxableTransfer,
         r.crmTaxFreeCard,
+        r.crmTaxFreeCashReceipt || 0,
+        r.crmTaxFreeTransfer || 0,
         t.terminalCardTotal,
         t.terminalCashTotal,
         t.crmGrandTotal,
@@ -418,6 +422,8 @@ function Detail({ report, onEdit }: { report: SalesReport; onEdit: () => void })
             <li className="flex justify-between"><span>비보험(과세) 현금영수증</span><span>{formatKRW(report.crmTaxableCashReceipt)}</span></li>
             <li className="flex justify-between"><span>비보험(과세) 통장입금</span><span>{formatKRW(report.crmTaxableTransfer)}</span></li>
             <li className="flex justify-between"><span>비보험(면세) 카드</span><span>{formatKRW(report.crmTaxFreeCard)}</span></li>
+            <li className="flex justify-between"><span>비보험(면세) 현금영수증</span><span>{formatKRW(report.crmTaxFreeCashReceipt || 0)}</span></li>
+            <li className="flex justify-between"><span>비보험(면세) 통장입금</span><span>{formatKRW(report.crmTaxFreeTransfer || 0)}</span></li>
             <li className="flex justify-between font-semibold pt-1 border-t"><span>총 매출</span><span>{formatKRW(t.crmGrandTotal)}</span></li>
           </ul>
         </div>
@@ -488,6 +494,8 @@ function EditForm({
   const [crmTaxableCashReceipt, setCrmTaxableCashReceipt] = useState(report.crmTaxableCashReceipt);
   const [crmTaxableTransfer, setCrmTaxableTransfer] = useState(report.crmTaxableTransfer);
   const [crmTaxFreeCard, setCrmTaxFreeCard] = useState(report.crmTaxFreeCard);
+  const [crmTaxFreeCashReceipt, setCrmTaxFreeCashReceipt] = useState(report.crmTaxFreeCashReceipt || 0);
+  const [crmTaxFreeTransfer, setCrmTaxFreeTransfer] = useState(report.crmTaxFreeTransfer || 0);
   const [terminals, setTerminals] = useState(report.terminals.map((t) => ({ ...t })));
   const [cashOnHand, setCashOnHand] = useState(report.cashOnHand);
   const [transferDetails, setTransferDetails] = useState(report.transferDetails || "");
@@ -499,6 +507,8 @@ function EditForm({
     crmTaxableCashReceipt,
     crmTaxableTransfer,
     crmTaxFreeCard,
+    crmTaxFreeCashReceipt,
+    crmTaxFreeTransfer,
     terminals,
   });
 
@@ -518,6 +528,8 @@ function EditForm({
             crmTaxableCashReceipt: Number(crmTaxableCashReceipt) || 0,
             crmTaxableTransfer: Number(crmTaxableTransfer) || 0,
             crmTaxFreeCard: Number(crmTaxFreeCard) || 0,
+            crmTaxFreeCashReceipt: Number(crmTaxFreeCashReceipt) || 0,
+            crmTaxFreeTransfer: Number(crmTaxFreeTransfer) || 0,
             terminals: terminals.map((t) => ({
               name: t.name,
               card: Number(t.card) || 0,
@@ -601,6 +613,8 @@ function EditForm({
               <tr><td className="py-1">비보험(과세) 현금영수증</td><td className="py-1">{num(crmTaxableCashReceipt, setCrmTaxableCashReceipt)}</td></tr>
               <tr><td className="py-1">비보험(과세) 통장입금</td><td className="py-1">{num(crmTaxableTransfer, setCrmTaxableTransfer)}</td></tr>
               <tr><td className="py-1">비보험(면세) 카드</td><td className="py-1">{num(crmTaxFreeCard, setCrmTaxFreeCard)}</td></tr>
+              <tr><td className="py-1">비보험(면세) 현금영수증</td><td className="py-1">{num(crmTaxFreeCashReceipt, setCrmTaxFreeCashReceipt)}</td></tr>
+              <tr><td className="py-1">비보험(면세) 통장입금</td><td className="py-1">{num(crmTaxFreeTransfer, setCrmTaxFreeTransfer)}</td></tr>
               <tr className="font-semibold"><td className="pt-2">총 매출</td><td className="pt-2 text-right">{formatKRW(totals.crmGrandTotal)}</td></tr>
             </tbody>
           </table>

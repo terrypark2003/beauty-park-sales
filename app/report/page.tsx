@@ -29,6 +29,8 @@ export default function ReportPage() {
   const [crmTaxableCashReceipt, setCrmTaxableCashReceipt] = useState(0);
   const [crmTaxableTransfer, setCrmTaxableTransfer] = useState(0);
   const [crmTaxFreeCard, setCrmTaxFreeCard] = useState(0);
+  const [crmTaxFreeCashReceipt, setCrmTaxFreeCashReceipt] = useState(0);
+  const [crmTaxFreeTransfer, setCrmTaxFreeTransfer] = useState(0);
 
   const [terminals, setTerminals] = useState(
     TERMINAL_NAMES.map((name) => ({
@@ -60,9 +62,11 @@ export default function ReportPage() {
         crmTaxableCashReceipt,
         crmTaxableTransfer,
         crmTaxFreeCard,
+        crmTaxFreeCashReceipt,
+        crmTaxFreeTransfer,
         terminals,
       }),
-    [crmTaxableCard, crmTaxableCashReceipt, crmTaxableTransfer, crmTaxFreeCard, terminals]
+    [crmTaxableCard, crmTaxableCashReceipt, crmTaxableTransfer, crmTaxFreeCard, crmTaxFreeCashReceipt, crmTaxFreeTransfer, terminals]
   );
 
   const updateTerminal = (i: number, key: "card" | "cash", value: number) => {
@@ -98,6 +102,8 @@ export default function ReportPage() {
           crmTaxableCashReceipt,
           crmTaxableTransfer,
           crmTaxFreeCard,
+          crmTaxFreeCashReceipt,
+          crmTaxFreeTransfer,
           terminals,
           cashOnHand,
           transferDetails,
@@ -111,6 +117,8 @@ export default function ReportPage() {
       setCrmTaxableCashReceipt(0);
       setCrmTaxableTransfer(0);
       setCrmTaxFreeCard(0);
+      setCrmTaxFreeCashReceipt(0);
+      setCrmTaxFreeTransfer(0);
       setTerminals(
         TERMINAL_NAMES.map((name) => ({
           name,
@@ -206,9 +214,17 @@ export default function ReportPage() {
                   <td className="px-3 py-2"><MoneyInput value={crmTaxableTransfer} onChange={setCrmTaxableTransfer} /></td>
                 </tr>
                 <tr>
-                  <td className="px-3 py-2">비보험(면세)</td>
+                  <td className="px-3 py-2" rowSpan={3}>비보험(면세)</td>
                   <td className="px-3 py-2">카드</td>
                   <td className="px-3 py-2"><MoneyInput value={crmTaxFreeCard} onChange={setCrmTaxFreeCard} /></td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-2">현금영수증</td>
+                  <td className="px-3 py-2"><MoneyInput value={crmTaxFreeCashReceipt} onChange={setCrmTaxFreeCashReceipt} /></td>
+                </tr>
+                <tr>
+                  <td className="px-3 py-2">통장입금</td>
+                  <td className="px-3 py-2"><MoneyInput value={crmTaxFreeTransfer} onChange={setCrmTaxFreeTransfer} /></td>
                 </tr>
                 <tr className="bg-brand-50 font-semibold">
                   <td className="px-3 py-2" colSpan={2}>CRM 총 매출</td>

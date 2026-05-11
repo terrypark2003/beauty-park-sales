@@ -14,6 +14,8 @@ interface SubmitBody {
   crmTaxableCashReceipt: number;
   crmTaxableTransfer: number;
   crmTaxFreeCard: number;
+  crmTaxFreeCashReceipt?: number;
+  crmTaxFreeTransfer?: number;
   terminals: Array<{ name: string; card: number; cash: number }>;
   cashOnHand: number;
   transferDetails?: string;
@@ -56,6 +58,8 @@ export async function POST(req: Request) {
       crmTaxableCashReceipt: Number(body.crmTaxableCashReceipt) || 0,
       crmTaxableTransfer: Number(body.crmTaxableTransfer) || 0,
       crmTaxFreeCard: Number(body.crmTaxFreeCard) || 0,
+      crmTaxFreeCashReceipt: Number(body.crmTaxFreeCashReceipt) || 0,
+      crmTaxFreeTransfer: Number(body.crmTaxFreeTransfer) || 0,
       terminals: body.terminals.map((t) => ({
         name: String(t.name || ""),
         card: Number(t.card) || 0,

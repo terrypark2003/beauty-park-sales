@@ -160,6 +160,8 @@ function Detail({ r }: { r: SalesReport }) {
           <li className="flex justify-between"><span>비보험(과세) 현금영수증</span><span>{formatKRW(r.crmTaxableCashReceipt)}</span></li>
           <li className="flex justify-between"><span>비보험(과세) 통장입금</span><span>{formatKRW(r.crmTaxableTransfer)}</span></li>
           <li className="flex justify-between"><span>비보험(면세) 카드</span><span>{formatKRW(r.crmTaxFreeCard)}</span></li>
+          <li className="flex justify-between"><span>비보험(면세) 현금영수증</span><span>{formatKRW(r.crmTaxFreeCashReceipt || 0)}</span></li>
+          <li className="flex justify-between"><span>비보험(면세) 통장입금</span><span>{formatKRW(r.crmTaxFreeTransfer || 0)}</span></li>
           <li className="flex justify-between font-semibold pt-1 border-t"><span>총 매출</span><span>{formatKRW(t.crmGrandTotal)}</span></li>
         </ul>
       </div>
