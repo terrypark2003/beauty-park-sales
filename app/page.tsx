@@ -1,39 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const STAFF_CREDENTIALS: Record<string, string> = {
-  정한별: "0303",
-  최현진: "0728",
-  김유나: "1234",
-  류민정: "2267",
-  최여주: "7476",
-  박윤정: "9511",
-};
+const ENTRY_PASSWORD = "bpdeskteam";
 
 export default function HomePage() {
   const router = useRouter();
-  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const saved = localStorage.getItem("bp_user_name");
-    if (saved) setName(saved);
-  }, []);
-
   const handleEnter = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const expected = STAFF_CREDENTIALS[trimmed];
-    if (!expected || password !== expected) {
-      setError("이름 또는 비밀번호가 올바르지 않습니다.");
+    if (password !== ENTRY_PASSWORD) {
+      setError("비밀번호가 올바르지 않습니다.");
       return;
     }
     setError(null);
-    localStorage.setItem("bp_user_name", trimmed);
+    localStorage.setItem("bp_entered", "yes");
+    localStorage.setItem("bp_entry_pw", password);
     router.push("/report");
   };
 
@@ -50,19 +35,6 @@ export default function HomePage() {
 
         <form onSubmit={handleEnter} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">작성자 이름</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="이름을 입력하세요"
-              className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
-              autoFocus
-              required
-            />
-          </div>
-
-          <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">비밀번호</label>
             <input
               type="password"
@@ -73,6 +45,7 @@ export default function HomePage() {
               }}
               placeholder="비밀번호를 입력하세요"
               className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none"
+              autoFocus
               required
             />
           </div>
@@ -85,7 +58,7 @@ export default function HomePage() {
 
           <button
             type="submit"
-            disabled={!name.trim() || !password}
+            disabled={!password}
             className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
           >
             입장하기

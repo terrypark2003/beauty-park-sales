@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { computeTotals, formatKRW } from "@/lib/types";
@@ -19,6 +19,25 @@ const todayISO = () => {
   return new Date(d.getTime() - tz).toISOString().slice(0, 10);
 };
 
+const DRAFT_KEY = "bp_draft";
+
+interface DraftShape {
+  author: string;
+  reviewer: string;
+  reportDate: string;
+  crmTaxableCard: number;
+  crmTaxableCashReceipt: number;
+  crmTaxableTransfer: number;
+  crmTaxFreeCard: number;
+  crmTaxFreeCashReceipt: number;
+  crmTaxFreeTransfer: number;
+  terminals: Array<{ name: string; card: number; cash: number }>;
+  cashOnHand: number;
+  transferDetails: string;
+  notes: string;
+  savedAt: string;
+}
+
 export default function ReportPage() {
   const router = useRouter();
   const [author, setAuthor] = useState("");
@@ -32,9 +51,9 @@ export default function ReportPage() {
   const [crmTaxFreeCashReceipt, setCrmTaxFreeCashReceipt] = useState(0);
   const [crmTaxFreeTransfer, setCrmTaxFreeTransfer] = useState(0);
 
-  const [terminals, setTerminals] = useState(
+  const [terminals, setTerminals] = useState<Array<{ name: string; card: number; cash: number }>>(
     TERMINAL_NAMES.map((name) => ({
-      name,
+      name: name as string,
       card: 0,
       cash: 0,
     }))
@@ -44,14 +63,49 @@ export default function ReportPage() {
   const [transferDetails, setTransferDetails] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null);
+  const draftLoaded = useRef(false);
 
+  // Auth gate + draft restore + last author prefill
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("bp_user_name") : null;
-    if (!saved) {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("bp_entered") !== "yes") {
       router.replace("/");
+      return;
+    }
+    if (draftLoaded.current) return;
+    draftLoaded.current = true;
+
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (raw) {
+      try {
+        const d = JSON.parse(raw) as DraftShape;
+        setAuthor(d.author || "");
+        setReviewer(d.reviewer || "");
+        setReportDate(d.reportDate || todayISO());
+        setCrmTaxableCard(d.crmTaxableCard || 0);
+        setCrmTaxableCashReceipt(d.crmTaxableCashReceipt || 0);
+        setCrmTaxableTransfer(d.crmTaxableTransfer || 0);
+        setCrmTaxFreeCard(d.crmTaxFreeCard || 0);
+        setCrmTaxFreeCashReceipt(d.crmTaxFreeCashReceipt || 0);
+        setCrmTaxFreeTransfer(d.crmTaxFreeTransfer || 0);
+        if (Array.isArray(d.terminals) && d.terminals.length === TERMINAL_NAMES.length) {
+          setTerminals(d.terminals);
+        }
+        setCashOnHand(d.cashOnHand || 0);
+        setTransferDetails(d.transferDetails || "");
+        setNotes(d.notes || "");
+        const when = d.savedAt ? new Date(d.savedAt).toLocaleString("ko-KR") : "";
+        setMessage({
+          type: "info",
+          text: `임시 저장된 내용을 불러왔습니다${when ? ` (저장 시각: ${when})` : ""}.`,
+        });
+      } catch {
+        /* ignore corrupt draft */
+      }
     } else {
-      setAuthor(saved);
+      const lastAuthor = localStorage.getItem("bp_last_author") || "";
+      if (lastAuthor) setAuthor(lastAuthor);
     }
   }, [router]);
 
@@ -66,7 +120,15 @@ export default function ReportPage() {
         crmTaxFreeTransfer,
         terminals,
       }),
-    [crmTaxableCard, crmTaxableCashReceipt, crmTaxableTransfer, crmTaxFreeCard, crmTaxFreeCashReceipt, crmTaxFreeTransfer, terminals]
+    [
+      crmTaxableCard,
+      crmTaxableCashReceipt,
+      crmTaxableTransfer,
+      crmTaxFreeCard,
+      crmTaxFreeCashReceipt,
+      crmTaxFreeTransfer,
+      terminals,
+    ]
   );
 
   const updateTerminal = (i: number, key: "card" | "cash", value: number) => {
@@ -77,9 +139,52 @@ export default function ReportPage() {
     });
   };
 
+  const collectDraft = (): DraftShape => ({
+    author,
+    reviewer,
+    reportDate,
+    crmTaxableCard,
+    crmTaxableCashReceipt,
+    crmTaxableTransfer,
+    crmTaxFreeCard,
+    crmTaxFreeCashReceipt,
+    crmTaxFreeTransfer,
+    terminals,
+    cashOnHand,
+    transferDetails,
+    notes,
+    savedAt: new Date().toISOString(),
+  });
+
+  const handleSaveDraft = () => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(collectDraft()));
+    setMessage({ type: "ok", text: "임시 저장되었습니다. 같은 브라우저로 돌아오면 자동으로 불러옵니다." });
+  };
+
+  const handleDiscardDraft = () => {
+    if (!confirm("저장된 임시 데이터를 삭제하시겠습니까?")) return;
+    localStorage.removeItem(DRAFT_KEY);
+    setCrmTaxableCard(0);
+    setCrmTaxableCashReceipt(0);
+    setCrmTaxableTransfer(0);
+    setCrmTaxFreeCard(0);
+    setCrmTaxFreeCashReceipt(0);
+    setCrmTaxFreeTransfer(0);
+    setTerminals(TERMINAL_NAMES.map((name) => ({ name, card: 0, cash: 0 })));
+    setCashOnHand(0);
+    setTransferDetails("");
+    setNotes("");
+    setMessage({ type: "info", text: "임시 저장 내용을 삭제했습니다." });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+
+    if (!author.trim()) {
+      setMessage({ type: "err", text: "작성자 이름을 입력하세요." });
+      return;
+    }
 
     if (!totals.isMatched) {
       setMessage({
@@ -96,7 +201,7 @@ export default function ReportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           reportDate,
-          author,
+          author: author.trim(),
           reviewer,
           crmTaxableCard,
           crmTaxableCashReceipt,
@@ -112,6 +217,10 @@ export default function ReportPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "제출 실패");
+
+      localStorage.setItem("bp_last_author", author.trim());
+      localStorage.removeItem(DRAFT_KEY);
+
       setMessage({ type: "ok", text: "제출이 완료되었습니다. 이메일이 발송되었습니다." });
       setCrmTaxableCard(0);
       setCrmTaxableCashReceipt(0);
@@ -119,13 +228,7 @@ export default function ReportPage() {
       setCrmTaxFreeCard(0);
       setCrmTaxFreeCashReceipt(0);
       setCrmTaxFreeTransfer(0);
-      setTerminals(
-        TERMINAL_NAMES.map((name) => ({
-          name,
-          card: 0,
-          cash: 0,
-        }))
-      );
+      setTerminals(TERMINAL_NAMES.map((name) => ({ name, card: 0, cash: 0 })));
       setCashOnHand(0);
       setTransferDetails("");
       setNotes("");
@@ -138,7 +241,8 @@ export default function ReportPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("bp_user_name");
+    localStorage.removeItem("bp_entered");
+    localStorage.removeItem("bp_entry_pw");
     router.push("/");
   };
 
@@ -147,13 +251,10 @@ export default function ReportPage() {
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">뷰티파크의원 일일 매출 보고서</h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            작성자: <span className="font-semibold text-neutral-700">{author}</span>
-          </p>
         </div>
         <div className="flex gap-3 items-center">
           <Link href="/history" className="text-sm text-brand-600 hover:underline font-medium">
-            내 제출 기록 →
+            전체 제출 기록 →
           </Link>
           <button onClick={handleLogout} className="text-sm text-neutral-600 hover:text-neutral-900">
             로그아웃
@@ -163,7 +264,18 @@ export default function ReportPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1.5">작성자 *</label>
+              <input
+                type="text"
+                value={author}
+                onChange={(e) => setAuthor(e.target.value)}
+                placeholder="이름을 입력하세요"
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"
+                required
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">작성일자</label>
               <input
@@ -189,7 +301,7 @@ export default function ReportPage() {
 
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
           <h2 className="text-lg font-semibold text-neutral-900 mb-1">1. CRM 매출 입력</h2>
-          <p className="text-sm text-neutral-500 mb-4">CRM 항목별 수납내역 4개 항목을 입력하세요</p>
+          <p className="text-sm text-neutral-500 mb-4">CRM 항목별 수납내역을 입력하세요</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -334,6 +446,8 @@ export default function ReportPage() {
             className={`p-4 rounded-lg text-sm ${
               message.type === "ok"
                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : message.type === "info"
+                ? "bg-amber-50 text-amber-800 border border-amber-200"
                 : "bg-rose-50 text-rose-700 border border-rose-200"
             }`}
           >
@@ -341,13 +455,27 @@ export default function ReportPage() {
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 flex-wrap">
           <button
             type="submit"
             disabled={submitting || !totals.isMatched}
-            className="flex-1 bg-brand-600 hover:bg-brand-700 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
+            className="flex-1 min-w-[200px] bg-brand-600 hover:bg-brand-700 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
           >
             {submitting ? "제출 중..." : totals.isMatched ? "제출하기" : "차액이 있어 제출 불가"}
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            className="px-4 py-3 border border-brand-600 text-brand-600 hover:bg-brand-50 font-semibold rounded-lg"
+          >
+            임시 저장
+          </button>
+          <button
+            type="button"
+            onClick={handleDiscardDraft}
+            className="px-4 py-3 border border-neutral-300 text-neutral-600 hover:bg-neutral-100 font-semibold rounded-lg"
+          >
+            초기화
           </button>
         </div>
       </form>
@@ -364,14 +492,16 @@ function MoneyInput({
   onChange: (n: number) => void;
   alignRight?: boolean;
 }) {
+  const display = value === 0 ? "" : value.toLocaleString("ko-KR");
   return (
     <input
-      type="number"
+      type="text"
       inputMode="numeric"
-      min={0}
-      step={1}
-      value={value === 0 ? "" : value}
-      onChange={(e) => onChange(Number(e.target.value || 0))}
+      value={display}
+      onChange={(e) => {
+        const raw = e.target.value.replace(/[^\d]/g, "");
+        onChange(raw === "" ? 0 : Number(raw));
+      }}
       placeholder="0"
       className={`w-full px-3 py-1.5 border border-neutral-300 rounded-md outline-none focus:ring-2 focus:ring-brand-500 ${
         alignRight ? "text-right" : "text-left"

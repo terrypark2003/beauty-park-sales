@@ -1,28 +1,31 @@
 "use client";
 
-// 로그인한 작성자 이름으로 본인이 제출한 매출 보고서 목록을 조회하는 페이지
-
-import { useEffect, useState } from "react";
+// 로그인한 사용자가 전체 매출 보고서 목록을 작성자·날짜 필터와 함께 조회하는 페이지
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SalesReport, computeTotals, formatKRW } from "@/lib/types";
 
+const ENTRY_PASSWORD = "bpdeskteam";
+
 export default function HistoryPage() {
   const router = useRouter();
-  const [author, setAuthor] = useState("");
   const [reports, setReports] = useState<SalesReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterAuthor, setFilterAuthor] = useState("");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = typeof window !== "undefined" ? localStorage.getItem("bp_user_name") : null;
-    if (!saved) {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem("bp_entered") !== "yes") {
       router.replace("/");
       return;
     }
-    setAuthor(saved);
-    fetch(`/api/my-reports?author=${encodeURIComponent(saved)}`)
+    const pw = localStorage.getItem("bp_entry_pw") || ENTRY_PASSWORD;
+    fetch(`/api/all-reports?password=${encodeURIComponent(pw)}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.error) throw new Error(d.error);
@@ -32,15 +35,21 @@ export default function HistoryPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
+  const filtered = useMemo(() => {
+    return reports.filter((r) => {
+      if (filterAuthor && !r.author.includes(filterAuthor)) return false;
+      if (filterFrom && r.reportDate < filterFrom) return false;
+      if (filterTo && r.reportDate > filterTo) return false;
+      return true;
+    });
+  }, [reports, filterAuthor, filterFrom, filterTo]);
+
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">내 제출 기록</h1>
-          <p className="text-sm text-neutral-500 mt-1">
-            작성자: <span className="font-semibold text-neutral-700">{author}</span>
-            <span className="ml-2 text-neutral-400">· 최신순 정렬, 최대 200건</span>
-          </p>
+          <h1 className="text-2xl font-bold text-neutral-900">전체 제출 기록</h1>
+          <p className="text-sm text-neutral-500 mt-1">최신순 정렬, 최대 500건</p>
         </div>
         <Link
           href="/report"
@@ -49,6 +58,36 @@ export default function HistoryPage() {
           ← 보고서 작성으로
         </Link>
       </div>
+
+      <section className="bg-white rounded-xl border border-neutral-200 p-4 mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="text-xs text-neutral-600">작성자 검색</label>
+          <input
+            value={filterAuthor}
+            onChange={(e) => setFilterAuthor(e.target.value)}
+            className="w-full mt-1 px-3 py-2 border border-neutral-300 rounded-md text-sm"
+            placeholder="이름 일부 입력"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-neutral-600">시작일</label>
+          <input
+            type="date"
+            value={filterFrom}
+            onChange={(e) => setFilterFrom(e.target.value)}
+            className="w-full mt-1 px-3 py-2 border border-neutral-300 rounded-md text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-neutral-600">종료일</label>
+          <input
+            type="date"
+            value={filterTo}
+            onChange={(e) => setFilterTo(e.target.value)}
+            className="w-full mt-1 px-3 py-2 border border-neutral-300 rounded-md text-sm"
+          />
+        </div>
+      </section>
 
       {loading && (
         <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center text-neutral-500">
@@ -62,19 +101,20 @@ export default function HistoryPage() {
         </div>
       )}
 
-      {!loading && !error && reports.length === 0 && (
+      {!loading && !error && filtered.length === 0 && (
         <div className="bg-white rounded-xl border border-neutral-200 p-12 text-center text-neutral-500">
-          아직 제출한 보고서가 없습니다.
+          {reports.length === 0 ? "아직 제출된 보고서가 없습니다." : "조건에 맞는 보고서가 없습니다."}
         </div>
       )}
 
-      {!loading && reports.length > 0 && (
+      {!loading && filtered.length > 0 && (
         <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-neutral-50 text-neutral-700">
                   <th className="text-left px-3 py-2 font-medium">작성일</th>
+                  <th className="text-left px-3 py-2 font-medium">작성자</th>
                   <th className="text-right px-3 py-2 font-medium">CRM 매출</th>
                   <th className="text-right px-3 py-2 font-medium">단말기 매출</th>
                   <th className="text-center px-3 py-2 font-medium">일치</th>
@@ -83,17 +123,43 @@ export default function HistoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
-                {reports.map((r) => {
+                {filtered.map((r) => {
                   const t = computeTotals(r);
                   const isOpen = openId === r.id;
                   return (
-                    <RowAndDetail
-                      key={r.id}
-                      r={r}
-                      totals={t}
-                      isOpen={isOpen}
-                      onToggle={() => setOpenId(isOpen ? null : r.id)}
-                    />
+                    <Fragment key={r.id}>
+                      <tr className="hover:bg-neutral-50">
+                        <td className="px-3 py-2">{r.reportDate}</td>
+                        <td className="px-3 py-2">{r.author}</td>
+                        <td className="px-3 py-2 text-right">{formatKRW(t.crmGrandTotal)}</td>
+                        <td className="px-3 py-2 text-right">{formatKRW(t.terminalGrandTotal)}</td>
+                        <td className="px-3 py-2 text-center">
+                          {t.isMatched ? (
+                            <span className="text-emerald-600">✓</span>
+                          ) : (
+                            <span className="text-rose-600">✗</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-neutral-500 text-xs">
+                          {new Date(r.submittedAt).toLocaleString("ko-KR")}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            onClick={() => setOpenId(isOpen ? null : r.id)}
+                            className="text-xs text-brand-600 hover:underline"
+                          >
+                            {isOpen ? "닫기" : "상세"}
+                          </button>
+                        </td>
+                      </tr>
+                      {isOpen && (
+                        <tr className="bg-neutral-50">
+                          <td colSpan={7} className="px-4 py-4">
+                            <Detail r={r} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -102,50 +168,6 @@ export default function HistoryPage() {
         </div>
       )}
     </main>
-  );
-}
-
-function RowAndDetail({
-  r,
-  totals,
-  isOpen,
-  onToggle,
-}: {
-  r: SalesReport;
-  totals: ReturnType<typeof computeTotals>;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <>
-      <tr className="hover:bg-neutral-50">
-        <td className="px-3 py-2">{r.reportDate}</td>
-        <td className="px-3 py-2 text-right">{formatKRW(totals.crmGrandTotal)}</td>
-        <td className="px-3 py-2 text-right">{formatKRW(totals.terminalGrandTotal)}</td>
-        <td className="px-3 py-2 text-center">
-          {totals.isMatched ? (
-            <span className="text-emerald-600">✓</span>
-          ) : (
-            <span className="text-rose-600">✗</span>
-          )}
-        </td>
-        <td className="px-3 py-2 text-neutral-500 text-xs">
-          {new Date(r.submittedAt).toLocaleString("ko-KR")}
-        </td>
-        <td className="px-3 py-2 text-right">
-          <button onClick={onToggle} className="text-xs text-brand-600 hover:underline">
-            {isOpen ? "닫기" : "상세"}
-          </button>
-        </td>
-      </tr>
-      {isOpen && (
-        <tr className="bg-neutral-50">
-          <td colSpan={6} className="px-4 py-4">
-            <Detail r={r} />
-          </td>
-        </tr>
-      )}
-    </>
   );
 }
 
