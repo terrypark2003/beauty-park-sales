@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const ENTRY_PASSWORD = "bpdeskteam";
+const STAFF_CREDENTIALS: Record<string, string> = {
+  정한별: "0303",
+  최현진: "0728",
+  김유나: "1234",
+  류민정: "2267",
+  최여주: "7476",
+  박윤정: "9511",
+};
 
 export default function HomePage() {
   const router = useRouter();
@@ -20,8 +27,9 @@ export default function HomePage() {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) return;
-    if (password !== ENTRY_PASSWORD) {
-      setError("비밀번호가 올바르지 않습니다.");
+    const expected = STAFF_CREDENTIALS[trimmed];
+    if (!expected || password !== expected) {
+      setError("이름 또는 비밀번호가 올바르지 않습니다.");
       return;
     }
     setError(null);
