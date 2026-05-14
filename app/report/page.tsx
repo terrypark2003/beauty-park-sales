@@ -61,25 +61,7 @@ export default function ReportPage() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null);
-  const [guideOpen, setGuideOpen] = useState(true);
   const inited = useRef(false);
-
-  // Restore guide collapsed/expanded preference
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = localStorage.getItem("bp_guide_open");
-    if (saved === "no") setGuideOpen(false);
-  }, []);
-
-  const toggleGuide = () => {
-    setGuideOpen((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("bp_guide_open", next ? "yes" : "no");
-      }
-      return next;
-    });
-  };
 
   const applyDraft = (d: DraftShape, source: "auto" | "manual") => {
     if (d.author) setAuthor(d.author);
@@ -399,17 +381,9 @@ export default function ReportPage() {
         </section>
 
         <section className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-          <button
-            type="button"
-            onClick={toggleGuide}
-            className="flex items-center justify-between w-full text-left"
-          >
-            <h2 className="text-lg font-semibold text-amber-900">📖 사용법</h2>
-            <span className="text-amber-700 text-sm">{guideOpen ? "접기 ▲" : "펼치기 ▼"}</span>
-          </button>
+          <h2 className="text-lg font-semibold text-amber-900">📖 사용법</h2>
 
-          {guideOpen && (
-            <div className="mt-4 space-y-5 text-sm text-amber-950">
+          <div className="mt-4 space-y-5 text-sm text-amber-950">
               <div>
                 <h3 className="font-semibold mb-2">1. CRM 매출 입력</h3>
                 <ul className="list-disc pl-5 space-y-1">
@@ -445,8 +419,7 @@ export default function ReportPage() {
               <div className="p-3 bg-white border border-amber-300 rounded-md">
                 💡 CRM 금액과 단말기 매출 금액이 맞지 않으면, 어디서 에러가 났는지 확인해볼 필요가 있습니다.
               </div>
-            </div>
-          )}
+          </div>
         </section>
 
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
