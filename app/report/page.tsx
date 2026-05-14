@@ -61,7 +61,25 @@ export default function ReportPage() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null);
+  const [guideOpen, setGuideOpen] = useState(true);
   const inited = useRef(false);
+
+  // Restore guide collapsed/expanded preference
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("bp_guide_open");
+    if (saved === "no") setGuideOpen(false);
+  }, []);
+
+  const toggleGuide = () => {
+    setGuideOpen((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("bp_guide_open", next ? "yes" : "no");
+      }
+      return next;
+    });
+  };
 
   const applyDraft = (d: DraftShape, source: "auto" | "manual") => {
     if (d.author) setAuthor(d.author);
@@ -378,6 +396,57 @@ export default function ReportPage() {
               />
             </div>
           </div>
+        </section>
+
+        <section className="bg-amber-50 border border-amber-200 rounded-xl p-5">
+          <button
+            type="button"
+            onClick={toggleGuide}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <h2 className="text-lg font-semibold text-amber-900">📖 사용법</h2>
+            <span className="text-amber-700 text-sm">{guideOpen ? "접기 ▲" : "펼치기 ▼"}</span>
+          </button>
+
+          {guideOpen && (
+            <div className="mt-4 space-y-5 text-sm text-amber-950">
+              <div>
+                <h3 className="font-semibold mb-2">1. CRM 매출 입력</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>CRM에서 <strong>수납 조회</strong>를 클릭합니다.</li>
+                  <li><strong>금일</strong>을 선택합니다.</li>
+                  <li>
+                    <strong>조회</strong>를 누릅니다.
+                    <ul className="list-[circle] pl-5 mt-1 space-y-1">
+                      <li>
+                        우측에 나온 <strong>항목별 수납내역</strong>을 찾습니다.
+                        <ul className="list-[square] pl-5 mt-1 space-y-1">
+                          <li>&apos;카드&apos;란을 <strong>1. CRM 매출 입력</strong>에 있는 <strong>비보험(과세) - 카드</strong> 란으로 옮겨 적습니다.</li>
+                          <li>&apos;현금&apos;란을 <strong>1. CRM 매출 입력</strong>에 있는 <strong>비보험(과세) - 현금영수증</strong> 란으로 옮겨 적습니다.</li>
+                          <li>&apos;통장입금&apos;을 <strong>1. CRM 매출 입력</strong>에 있는 <strong>비보험(과세) - 통장입금</strong> 란으로 옮겨 적습니다.</li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+                <div className="mt-3 p-3 bg-rose-50 border border-rose-200 text-rose-900 rounded-md">
+                  ⚠️ 반드시 <strong>1. CRM 매출 입력</strong>은 <strong>CRM 상 데이터</strong>를 옮겨 적어야 합니다. 절대로 단말기 매출 입력을 더해서 1. CRM 매출 입력 칸에 옮겨 적으면 안됩니다.
+                </div>
+                <p className="mt-2 text-amber-900">
+                  이 프로세스의 목적은 <strong>실제 CRM 상 보이는 금액</strong>이 <strong>카드 단말기에 찍히는 금액</strong>과 같은지 확인하는 작업입니다.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">2. 단말기 매출 입력</h3>
+                <p>각 데스크에서 단말기 <strong>총 카드 금액</strong>과 <strong>현금/이체 금액</strong>을 확인하여 기록합니다.</p>
+              </div>
+
+              <div className="p-3 bg-white border border-amber-300 rounded-md">
+                💡 CRM 금액과 단말기 매출 금액이 맞지 않으면, 어디서 에러가 났는지 확인해볼 필요가 있습니다.
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="bg-white rounded-xl border border-neutral-200 p-5">
