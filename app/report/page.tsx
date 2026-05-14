@@ -19,27 +19,26 @@ const todayISO = () => {
   return new Date(d.getTime() - tz).toISOString().slice(0, 10);
 };
 
-const DRAFT_KEY = "bp_draft";
-
 interface DraftShape {
-  author: string;
-  reviewer: string;
-  reportDate: string;
-  crmTaxableCard: number;
-  crmTaxableCashReceipt: number;
-  crmTaxableTransfer: number;
-  crmTaxFreeCard: number;
-  crmTaxFreeCashReceipt: number;
-  crmTaxFreeTransfer: number;
-  terminals: Array<{ name: string; card: number; cash: number }>;
-  cashOnHand: number;
-  transferDetails: string;
-  notes: string;
-  savedAt: string;
+  author?: string;
+  reviewer?: string;
+  reportDate?: string;
+  crmTaxableCard?: number;
+  crmTaxableCashReceipt?: number;
+  crmTaxableTransfer?: number;
+  crmTaxFreeCard?: number;
+  crmTaxFreeCashReceipt?: number;
+  crmTaxFreeTransfer?: number;
+  terminals?: Array<{ name: string; card: number; cash: number }>;
+  cashOnHand?: number;
+  transferDetails?: string;
+  notes?: string;
+  savedAt?: string;
 }
 
 export default function ReportPage() {
   const router = useRouter();
+  const [pw, setPw] = useState("");
   const [author, setAuthor] = useState("");
   const [reviewer, setReviewer] = useState("");
   const [reportDate, setReportDate] = useState(todayISO());
@@ -52,60 +51,69 @@ export default function ReportPage() {
   const [crmTaxFreeTransfer, setCrmTaxFreeTransfer] = useState(0);
 
   const [terminals, setTerminals] = useState<Array<{ name: string; card: number; cash: number }>>(
-    TERMINAL_NAMES.map((name) => ({
-      name: name as string,
-      card: 0,
-      cash: 0,
-    }))
+    TERMINAL_NAMES.map((name) => ({ name: name as string, card: 0, cash: 0 }))
   );
 
   const [cashOnHand, setCashOnHand] = useState(0);
   const [transferDetails, setTransferDetails] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [loadingDraft, setLoadingDraft] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "err" | "info"; text: string } | null>(null);
-  const draftLoaded = useRef(false);
+  const inited = useRef(false);
 
-  // Auth gate + draft restore + last author prefill
+  const applyDraft = (d: DraftShape, source: "auto" | "manual") => {
+    if (d.author) setAuthor(d.author);
+    if (d.reviewer !== undefined) setReviewer(d.reviewer);
+    if (d.reportDate) setReportDate(d.reportDate);
+    setCrmTaxableCard(d.crmTaxableCard || 0);
+    setCrmTaxableCashReceipt(d.crmTaxableCashReceipt || 0);
+    setCrmTaxableTransfer(d.crmTaxableTransfer || 0);
+    setCrmTaxFreeCard(d.crmTaxFreeCard || 0);
+    setCrmTaxFreeCashReceipt(d.crmTaxFreeCashReceipt || 0);
+    setCrmTaxFreeTransfer(d.crmTaxFreeTransfer || 0);
+    if (Array.isArray(d.terminals) && d.terminals.length === TERMINAL_NAMES.length) {
+      setTerminals(d.terminals.map((t) => ({ name: t.name, card: t.card || 0, cash: t.cash || 0 })));
+    }
+    setCashOnHand(d.cashOnHand || 0);
+    setTransferDetails(d.transferDetails || "");
+    setNotes(d.notes || "");
+    const when = d.savedAt ? new Date(d.savedAt).toLocaleString("ko-KR") : "";
+    setMessage({
+      type: "info",
+      text:
+        source === "auto"
+          ? `서버에 저장된 임시저장을 불러왔습니다${when ? ` (저장 시각: ${when})` : ""}.`
+          : `임시저장을 불러왔습니다${when ? ` (저장 시각: ${when})` : ""}.`,
+    });
+  };
+
+  // Auth gate + initial draft auto-load
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem("bp_entered") !== "yes") {
       router.replace("/");
       return;
     }
-    if (draftLoaded.current) return;
-    draftLoaded.current = true;
+    if (inited.current) return;
+    inited.current = true;
 
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (raw) {
-      try {
-        const d = JSON.parse(raw) as DraftShape;
-        setAuthor(d.author || "");
-        setReviewer(d.reviewer || "");
-        setReportDate(d.reportDate || todayISO());
-        setCrmTaxableCard(d.crmTaxableCard || 0);
-        setCrmTaxableCashReceipt(d.crmTaxableCashReceipt || 0);
-        setCrmTaxableTransfer(d.crmTaxableTransfer || 0);
-        setCrmTaxFreeCard(d.crmTaxFreeCard || 0);
-        setCrmTaxFreeCashReceipt(d.crmTaxFreeCashReceipt || 0);
-        setCrmTaxFreeTransfer(d.crmTaxFreeTransfer || 0);
-        if (Array.isArray(d.terminals) && d.terminals.length === TERMINAL_NAMES.length) {
-          setTerminals(d.terminals);
-        }
-        setCashOnHand(d.cashOnHand || 0);
-        setTransferDetails(d.transferDetails || "");
-        setNotes(d.notes || "");
-        const when = d.savedAt ? new Date(d.savedAt).toLocaleString("ko-KR") : "";
-        setMessage({
-          type: "info",
-          text: `임시 저장된 내용을 불러왔습니다${when ? ` (저장 시각: ${when})` : ""}.`,
+    const entryPw = localStorage.getItem("bp_entry_pw") || "bpdeskteam";
+    setPw(entryPw);
+
+    const lastAuthor = localStorage.getItem("bp_last_author") || "";
+    if (lastAuthor) {
+      setAuthor(lastAuthor);
+      // Try fetching server draft for this author
+      fetch(`/api/draft?password=${encodeURIComponent(entryPw)}&author=${encodeURIComponent(lastAuthor)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.draft) applyDraft(data.draft as DraftShape, "auto");
+        })
+        .catch(() => {
+          /* ignore */
         });
-      } catch {
-        /* ignore corrupt draft */
-      }
-    } else {
-      const lastAuthor = localStorage.getItem("bp_last_author") || "";
-      if (lastAuthor) setAuthor(lastAuthor);
     }
   }, [router]);
 
@@ -153,28 +161,83 @@ export default function ReportPage() {
     cashOnHand,
     transferDetails,
     notes,
-    savedAt: new Date().toISOString(),
   });
 
-  const handleSaveDraft = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(collectDraft()));
-    setMessage({ type: "ok", text: "임시 저장되었습니다. 같은 브라우저로 돌아오면 자동으로 불러옵니다." });
+  const handleSaveDraft = async () => {
+    if (!author.trim()) {
+      setMessage({ type: "err", text: "임시저장 전에 작성자 이름을 입력하세요." });
+      return;
+    }
+    setSavingDraft(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pw, author: author.trim(), data: collectDraft() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "저장 실패");
+      localStorage.setItem("bp_last_author", author.trim());
+      setMessage({
+        type: "ok",
+        text: `임시저장 완료. 같은 작성자명(${author.trim()})으로 다른 PC에서 접속해도 자동으로 불러옵니다.`,
+      });
+    } catch (err) {
+      setMessage({ type: "err", text: err instanceof Error ? err.message : "저장 실패" });
+    } finally {
+      setSavingDraft(false);
+    }
   };
 
-  const handleDiscardDraft = () => {
-    if (!confirm("저장된 임시 데이터를 삭제하시겠습니까?")) return;
-    localStorage.removeItem(DRAFT_KEY);
+  const handleLoadDraft = async () => {
+    if (!author.trim()) {
+      setMessage({ type: "err", text: "작성자 이름을 먼저 입력하세요." });
+      return;
+    }
+    setLoadingDraft(true);
+    setMessage(null);
+    try {
+      const res = await fetch(
+        `/api/draft?password=${encodeURIComponent(pw)}&author=${encodeURIComponent(author.trim())}`
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "불러오기 실패");
+      if (!data.draft) {
+        setMessage({ type: "info", text: `${author.trim()}의 임시저장이 없습니다.` });
+      } else {
+        applyDraft(data.draft as DraftShape, "manual");
+      }
+    } catch (err) {
+      setMessage({ type: "err", text: err instanceof Error ? err.message : "불러오기 실패" });
+    } finally {
+      setLoadingDraft(false);
+    }
+  };
+
+  const handleDiscardDraft = async () => {
+    if (!confirm("저장된 임시저장 내용을 삭제하고 폼을 비우시겠습니까?")) return;
     setCrmTaxableCard(0);
     setCrmTaxableCashReceipt(0);
     setCrmTaxableTransfer(0);
     setCrmTaxFreeCard(0);
     setCrmTaxFreeCashReceipt(0);
     setCrmTaxFreeTransfer(0);
-    setTerminals(TERMINAL_NAMES.map((name) => ({ name, card: 0, cash: 0 })));
+    setTerminals(TERMINAL_NAMES.map((name) => ({ name: name as string, card: 0, cash: 0 })));
     setCashOnHand(0);
     setTransferDetails("");
     setNotes("");
-    setMessage({ type: "info", text: "임시 저장 내용을 삭제했습니다." });
+    if (author.trim()) {
+      try {
+        await fetch(
+          `/api/draft?password=${encodeURIComponent(pw)}&author=${encodeURIComponent(author.trim())}`,
+          { method: "DELETE" }
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+    setMessage({ type: "info", text: "임시저장과 폼 입력을 초기화했습니다." });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -185,7 +248,6 @@ export default function ReportPage() {
       setMessage({ type: "err", text: "작성자 이름을 입력하세요." });
       return;
     }
-
     if (!totals.isMatched) {
       setMessage({
         type: "err",
@@ -219,7 +281,16 @@ export default function ReportPage() {
       if (!res.ok) throw new Error(data.error || "제출 실패");
 
       localStorage.setItem("bp_last_author", author.trim());
-      localStorage.removeItem(DRAFT_KEY);
+
+      // delete server draft on successful submit
+      try {
+        await fetch(
+          `/api/draft?password=${encodeURIComponent(pw)}&author=${encodeURIComponent(author.trim())}`,
+          { method: "DELETE" }
+        );
+      } catch {
+        /* ignore */
+      }
 
       setMessage({ type: "ok", text: "제출이 완료되었습니다. 이메일이 발송되었습니다." });
       setCrmTaxableCard(0);
@@ -228,13 +299,12 @@ export default function ReportPage() {
       setCrmTaxFreeCard(0);
       setCrmTaxFreeCashReceipt(0);
       setCrmTaxFreeTransfer(0);
-      setTerminals(TERMINAL_NAMES.map((name) => ({ name, card: 0, cash: 0 })));
+      setTerminals(TERMINAL_NAMES.map((name) => ({ name: name as string, card: 0, cash: 0 })));
       setCashOnHand(0);
       setTransferDetails("");
       setNotes("");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "제출 실패";
-      setMessage({ type: "err", text: msg });
+      setMessage({ type: "err", text: err instanceof Error ? err.message : "제출 실패" });
     } finally {
       setSubmitting(false);
     }
@@ -267,14 +337,25 @@ export default function ReportPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">작성자 *</label>
-              <input
-                type="text"
-                value={author}
-                onChange={(e) => setAuthor(e.target.value)}
-                placeholder="이름을 입력하세요"
-                className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"
-                required
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={author}
+                  onChange={(e) => setAuthor(e.target.value)}
+                  placeholder="이름을 입력하세요"
+                  className="flex-1 min-w-0 px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-brand-500"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={handleLoadDraft}
+                  disabled={loadingDraft || !author.trim()}
+                  title="이 작성자명으로 다른 PC에서 저장한 임시저장을 불러옵니다"
+                  className="shrink-0 px-2 text-xs border border-brand-600 text-brand-600 hover:bg-brand-50 disabled:opacity-50 rounded-md whitespace-nowrap"
+                >
+                  {loadingDraft ? "..." : "불러오기"}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-neutral-700 mb-1.5">작성일자</label>
@@ -466,9 +547,10 @@ export default function ReportPage() {
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="px-4 py-3 border border-brand-600 text-brand-600 hover:bg-brand-50 font-semibold rounded-lg"
+            disabled={savingDraft}
+            className="px-4 py-3 border border-brand-600 text-brand-600 hover:bg-brand-50 disabled:opacity-50 font-semibold rounded-lg"
           >
-            임시 저장
+            {savingDraft ? "저장 중..." : "임시 저장"}
           </button>
           <button
             type="button"
