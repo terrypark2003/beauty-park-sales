@@ -104,7 +104,7 @@ export default function ReportPage() {
     if (inited.current) return;
     inited.current = true;
 
-    const entryPw = localStorage.getItem("bp_entry_pw") || "bpdeskteam";
+    const entryPw = localStorage.getItem("bp_entry_pw") || "BPDESKTEAM202605";
     setPw(entryPw);
 
     const lastAuthor = localStorage.getItem("bp_last_author") || "";

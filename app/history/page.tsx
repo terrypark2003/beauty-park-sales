@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SalesReport, computeTotals, formatKRW } from "@/lib/types";
 
-const ENTRY_PASSWORD = "bpdeskteam";
+const ENTRY_PASSWORD = "BPDESKTEAM202605";
 
 export default function HistoryPage() {
   const router = useRouter();

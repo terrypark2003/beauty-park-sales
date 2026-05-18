@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const ENTRY_PASSWORD = "bpdeskteam";
+const ENTRY_PASSWORD = "BPDESKTEAM202605";
 
 export default function HomePage() {
   const router = useRouter();

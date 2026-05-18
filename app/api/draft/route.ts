@@ -5,7 +5,7 @@ import { kv } from "@vercel/kv";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ENTRY_PASSWORD = "bpdeskteam";
+const ENTRY_PASSWORD = "BPDESKTEAM202605";
 
 function authOk(pw: string | null): boolean {
   const admin = process.env.ADMIN_PASSWORD || "";

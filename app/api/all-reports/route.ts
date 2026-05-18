@@ -6,7 +6,7 @@ import { SalesReport } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ENTRY_PASSWORD = "bpdeskteam";
+const ENTRY_PASSWORD = "BPDESKTEAM202605";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
