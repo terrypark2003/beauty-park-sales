@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { computeTotals, formatKRW } from "@/lib/types";
 
 const TERMINAL_NAMES = [
@@ -337,8 +338,12 @@ export default function ReportPage() {
   return (
     <main className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">뷰티파크의원 일일 매출 보고서</h1>
+        <div className="flex items-center gap-3">
+          <Image src="/logo/wordmark-light.png" alt="Beauty Park" width={56} height={56} className="rounded" />
+          <div>
+            <h1 className="font-serif text-2xl font-semibold text-brand-800 leading-tight">Beauty Park</h1>
+            <p className="text-xs tracking-widest text-brand-500 uppercase">일일 매출 보고서</p>
+          </div>
         </div>
         <div className="flex gap-3 items-center">
           <Link href="/history" className="text-sm text-brand-600 hover:underline font-medium">

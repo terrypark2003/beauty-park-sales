@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { SalesReport, computeTotals, formatKRW, isFullyConfirmed } from "@/lib/types";
 
 export default function AdminPage() {
@@ -147,7 +148,7 @@ export default function AdminPage() {
           }}
           className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-neutral-200 p-8"
         >
-          <h1 className="text-xl font-bold mb-1">관리자 페이지</h1>
+          <h1 className="font-serif text-2xl font-semibold mb-1 text-brand-800">관리자 페이지</h1>
           <p className="text-sm text-neutral-500 mb-6">비밀번호를 입력하세요</p>
           <input
             type="password"
@@ -176,9 +177,12 @@ export default function AdminPage() {
   return (
     <main className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">전체 매출 보고서</h1>
-          <p className="text-sm text-neutral-500 mt-1">최신순 정렬, 최대 500건</p>
+        <div className="flex items-center gap-3">
+          <Image src="/logo/wordmark-light.png" alt="Beauty Park" width={56} height={56} className="rounded" />
+          <div>
+            <h1 className="font-serif text-2xl font-semibold text-brand-800 leading-tight">전체 매출 보고서</h1>
+            <p className="text-xs text-brand-500 mt-1">관리자 · 최신순 정렬, 최대 500건</p>
+          </div>
         </div>
         <div className="flex gap-2">
           <button

@@ -4,6 +4,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { SalesReport, computeTotals, formatKRW } from "@/lib/types";
 
 const ENTRY_PASSWORD = "BPDESKTEAM202605";
@@ -47,9 +48,12 @@ export default function HistoryPage() {
   return (
     <main className="max-w-6xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">전체 제출 기록</h1>
-          <p className="text-sm text-neutral-500 mt-1">최신순 정렬, 최대 500건</p>
+        <div className="flex items-center gap-3">
+          <Image src="/logo/wordmark-light.png" alt="Beauty Park" width={56} height={56} className="rounded" />
+          <div>
+            <h1 className="font-serif text-2xl font-semibold text-brand-800 leading-tight">전체 제출 기록</h1>
+            <p className="text-xs text-brand-500 mt-1">최신순 정렬, 최대 500건</p>
+          </div>
         </div>
         <Link
           href="/report"
